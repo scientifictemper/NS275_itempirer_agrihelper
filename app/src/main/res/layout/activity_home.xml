@@ -6,7 +6,24 @@
     android:layout_height="match_parent"
     tools:context=".HomeActivity">
 
+    <RelativeLayout
+        android:id="@+id/address_layout"
+        android:layout_marginTop="10sp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10sp">
+
+        <TextView
+            android:id="@+id/current_location"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:textSize="20sp"
+            android:text="Tindivanam, IN">
+        </TextView>
+    </RelativeLayout>
     <LinearLayout
+        android:layout_below="@id/address_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:descendantFocusability="blocksDescendants"

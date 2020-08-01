@@ -1,5 +1,6 @@
 package com.example.agrihelper;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -7,6 +8,7 @@ import androidx.core.content.ContextCompat;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Typeface;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
@@ -14,30 +16,49 @@ import android.os.Looper;
 import android.os.ResultReceiver;
 import android.util.Log;
 import android.view.View;
+import android.widget.TextSwitcher;
 import android.widget.Toast;
 
 import com.example.agrihelper.service.UserAdressService;
+import com.example.agrihelper.utils.TextViewFactory;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 
+import java.util.ArrayList;
 import java.util.Objects;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class HomeActivity extends AppCompatActivity {
 
     private static final int REQUEST_CODE_LOCATION_PERMISSION = 1;
     private ResultReceiver resultReceiver;
+    private TextSwitcher tempText, humidityText, windText, descText;
+    Typeface typeface;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
+        initializeUI();
         resultReceiver = new UserAddressReceiver(new Handler());
         View decorView = getWindow().getDecorView();
         int uiOptions = View.SYSTEM_UI_FLAG_FULLSCREEN;
         decorView.setSystemUiVisibility(uiOptions);
         getUserLocation();
+    }
+
+    private void initializeUI() {
+        tempText = findViewById(R.id.temp_text_view);
+        descText = findViewById(R.id.description_text_view);
+        humidityText = findViewById(R.id.humidity_text_view);
+        windText = findViewById(R.id.wind_text_view);
+        typeface = Typeface.createFromAsset(getAssets(), "fonts/Vazir.ttf");
+        setupTextSwitchers();
     }
 
     private void getUserLocation() {
@@ -54,13 +75,14 @@ public class HomeActivity extends AppCompatActivity {
                             LocationServices.getFusedLocationProviderClient(HomeActivity.this)
                                     .removeLocationUpdates(this);
                             if (locationResult != null && locationResult.getLocations().size() > 0) {
-                                int latestLocationIndex = locationResult.getLocations().size()-1;
+                                int latestLocationIndex = locationResult.getLocations().size() - 1;
                                 double latitude = locationResult.getLocations().get(latestLocationIndex).getLatitude();
                                 double longitude = locationResult.getLocations().get(latestLocationIndex).getLongitude();
                                 Location location = new Location("providerNA");
                                 location.setLatitude(latitude);
                                 location.setLongitude(longitude);
                                 fetchUserAddress(location);
+                                getWeatherData(location);
                             }
                         }
                     }, Looper.getMainLooper());
@@ -69,7 +91,7 @@ public class HomeActivity extends AppCompatActivity {
 
     public boolean checkLocationPermission() {
         if (ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(HomeActivity.this, new String[] { Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_CODE_LOCATION_PERMISSION);
+            ActivityCompat.requestPermissions(HomeActivity.this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_CODE_LOCATION_PERMISSION);
             return false;
 
         } else {
@@ -101,4 +123,49 @@ public class HomeActivity extends AppCompatActivity {
             }
         }
     }
+
+    private void getWeatherData(Location location) {
+        Call<ArrayList<AccuweatherResponse>> call = AccuWeather.getCurrentWeather(location);
+        call.enqueue(new Callback<ArrayList<AccuweatherResponse>>() {
+            @Override
+            public void onResponse(@NonNull Call<ArrayList<AccuweatherResponse>> call, @NonNull Response<ArrayList<AccuweatherResponse>> response) {
+                Log.e("accuweather", response.toString());
+                if (response.code() == 200) {
+                    ArrayList<AccuweatherResponse> accuweatherResponse = response.body();
+                    assert accuweatherResponse != null;
+                    Log.e("Data", String.valueOf(accuweatherResponse.get(0).temperature.metric.value));
+                    setData(accuweatherResponse);
+                }
+            }
+            @Override
+            public void onFailure(@NonNull Call<ArrayList<AccuweatherResponse>> call, @NonNull Throwable t) {
+                Log.e("Forecast Data error", t.toString());
+            }
+        });
+    }
+
+    private void setData(ArrayList<AccuweatherResponse> response) {
+        AccuweatherResponse accuweatherResponse = response.get(0);
+        tempText.setText(String.valueOf(accuweatherResponse.temperature.metric.value));
+        descText.setText(accuweatherResponse.weatherText);
+        humidityText.setText(String.valueOf(accuweatherResponse.humidity));
+        windText.setText(String.valueOf(accuweatherResponse.wind.speed.windMetric.value));
+    }
+
+
+    private void setupTextSwitchers() {
+        tempText.setFactory(new TextViewFactory(HomeActivity.this, R.style.TempTextView, true, typeface));
+        tempText.setInAnimation(HomeActivity.this, R.anim.slide_in_right);
+        tempText.setOutAnimation(HomeActivity.this, R.anim.slide_out_left);
+        descText.setFactory(new TextViewFactory(HomeActivity.this, R.style.DescriptionTextView, true, typeface));
+        descText.setInAnimation(HomeActivity.this, R.anim.slide_in_right);
+        descText.setOutAnimation(HomeActivity.this, R.anim.slide_out_left);
+        humidityText.setFactory(new TextViewFactory(HomeActivity.this, R.style.HumidityTextView, false, typeface));
+        humidityText.setInAnimation(HomeActivity.this, R.anim.slide_in_bottom);
+        humidityText.setOutAnimation(HomeActivity.this, R.anim.slide_out_top);
+        windText.setFactory(new TextViewFactory(HomeActivity.this, R.style.WindSpeedTextView, false, typeface));
+        windText.setInAnimation(HomeActivity.this, R.anim.slide_in_bottom);
+        windText.setOutAnimation(HomeActivity.this, R.anim.slide_out_top);
+    }
+
 }
