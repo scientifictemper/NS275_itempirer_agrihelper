@@ -13,6 +13,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.ResultReceiver;
 import android.util.Log;
+import android.view.View;
 import android.widget.Toast;
 
 import com.example.agrihelper.service.UserAdressService;
@@ -33,6 +34,9 @@ public class HomeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
         resultReceiver = new UserAddressReceiver(new Handler());
+        View decorView = getWindow().getDecorView();
+        int uiOptions = View.SYSTEM_UI_FLAG_FULLSCREEN;
+        decorView.setSystemUiVisibility(uiOptions);
         getUserLocation();
     }
 

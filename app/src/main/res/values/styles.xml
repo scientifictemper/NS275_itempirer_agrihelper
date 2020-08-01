@@ -1,10 +1,20 @@
 <resources>
+    <style name="TextViewInColoredCard">
+        <item name="android:textColor">@android:color/white</item>
+    </style>
+
+    <style name="SubTextViewInColoredCard">
+        <item name="android:textColor">@color/grey_10</item>
+    </style>
     <!-- Base application theme. -->
-    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
-        <!-- Customize your theme here. -->
+    <style name="AppTheme" parent="@style/Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:windowContentTransitions">true</item>
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
+        <item name="android:windowAllowEnterTransitionOverlap">true</item>
+        <item name="android:windowAllowReturnTransitionOverlap">true</item>
+        <item name="android:windowSharedElementsUseOverlay">true</item>
     </style>
-
+    <style name="SplashScreenTheme" parent="Theme.AppCompat.Light.NoActionBar"></style>
 </resources>
