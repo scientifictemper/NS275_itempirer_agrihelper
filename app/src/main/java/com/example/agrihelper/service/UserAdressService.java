@@ -28,13 +28,13 @@ public class UserAdressService extends IntentService {
     public UserAdressService(){
         super("UserAddressService");
     }
+
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {
         if (intent != null) {
             String errorMessage = "";
             resultReceiver = intent.getParcelableExtra("RECEIVER");
             Location location = intent.getParcelableExtra("LOCATION_DATA");
-            Log.e("LOCATION DATA", location.toString());
             if (location == null){
                 return;
             }
@@ -55,13 +55,10 @@ public class UserAdressService extends IntentService {
                 for (int i=0; i<=address.getMaxAddressLineIndex();i++) {
                     addressFragments.add(address.getLocality());
                 }
-                Log.e("ADDRESS", addressFragments.toString());
                 deliverResultToReceiver(1,
                         TextUtils.join(Objects.requireNonNull(System.getProperty("line.separator"))
                                 , addressFragments));
             }
-        } else {
-            Log.e("Intent", "is null");
         }
     }
 

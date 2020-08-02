@@ -4,6 +4,9 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.DividerItemDecoration;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.Manifest;
 import android.content.Intent;
@@ -16,9 +19,12 @@ import android.os.Looper;
 import android.os.ResultReceiver;
 import android.util.Log;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.TextSwitcher;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.agrihelper.Model.ForecastWeatherData;
 import com.example.agrihelper.service.UserAdressService;
 import com.example.agrihelper.utils.TextViewFactory;
 import com.google.android.gms.location.LocationCallback;
@@ -38,7 +44,10 @@ public class HomeActivity extends AppCompatActivity {
     private static final int REQUEST_CODE_LOCATION_PERMISSION = 1;
     private ResultReceiver resultReceiver;
     private TextSwitcher tempText, humidityText, windText, descText;
+    TextView current_location;
     Typeface typeface;
+    RecyclerView recyclerView;
+    int[] colors;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,8 +66,11 @@ public class HomeActivity extends AppCompatActivity {
         descText = findViewById(R.id.description_text_view);
         humidityText = findViewById(R.id.humidity_text_view);
         windText = findViewById(R.id.wind_text_view);
+        recyclerView = findViewById(R.id.recycler_view);
+        current_location = findViewById(R.id.current_location);
         typeface = Typeface.createFromAsset(getAssets(), "fonts/Vazir.ttf");
         setupTextSwitchers();
+        colors = getResources().getIntArray(R.array.mdcolor_500);
     }
 
     private void getUserLocation() {
@@ -83,6 +95,7 @@ public class HomeActivity extends AppCompatActivity {
                                 location.setLongitude(longitude);
                                 fetchUserAddress(location);
                                 getWeatherData(location);
+                                getForecastData(location);
                             }
                         }
                     }, Looper.getMainLooper());
@@ -116,6 +129,7 @@ public class HomeActivity extends AppCompatActivity {
         protected void onReceiveResult(int resultCode, Bundle resultData) {
             super.onReceiveResult(resultCode, resultData);
             if (resultCode == 1) {
+                current_location.setText(resultData.getString("ADDRESS"));
                 Toast.makeText(HomeActivity.this, resultData.getString("ADDRESS"), Toast.LENGTH_SHORT).show();
                 Log.e("Location", Objects.requireNonNull(resultData.getString("ADDRESS")));
             } else {
@@ -129,17 +143,15 @@ public class HomeActivity extends AppCompatActivity {
         call.enqueue(new Callback<ArrayList<AccuweatherResponse>>() {
             @Override
             public void onResponse(@NonNull Call<ArrayList<AccuweatherResponse>> call, @NonNull Response<ArrayList<AccuweatherResponse>> response) {
-                Log.e("accuweather", response.toString());
                 if (response.code() == 200) {
                     ArrayList<AccuweatherResponse> accuweatherResponse = response.body();
                     assert accuweatherResponse != null;
-                    Log.e("Data", String.valueOf(accuweatherResponse.get(0).temperature.metric.value));
                     setData(accuweatherResponse);
                 }
             }
             @Override
             public void onFailure(@NonNull Call<ArrayList<AccuweatherResponse>> call, @NonNull Throwable t) {
-                Log.e("Forecast Data error", t.toString());
+                Log.e("Weather Data error", t.toString());
             }
         });
     }
@@ -152,6 +164,44 @@ public class HomeActivity extends AppCompatActivity {
         windText.setText(String.valueOf(accuweatherResponse.wind.speed.windMetric.value));
     }
 
+    private void getForecastData(Location location) {
+        Call<AccuweatherForecastResponse> call = AccuWeatherForecast.getForecastData(location);
+        call.enqueue(new Callback<AccuweatherForecastResponse>() {
+            @Override
+            public void onResponse(@NonNull Call<AccuweatherForecastResponse> call, @NonNull Response<AccuweatherForecastResponse> response) {
+                if (response.code() == 200) {
+                    AccuweatherForecastResponse accuweatherResponse = response.body();
+                    assert accuweatherResponse != null;
+                    convertToData(accuweatherResponse);
+                    Log.e("Forecast Data", accuweatherResponse.data.get(0).date);
+                    Log.e("Forecast Data", String.valueOf(accuweatherResponse.data.get(0).temperature.maximum.value));
+                }
+            }
+            @Override
+            public void onFailure(@NonNull Call<AccuweatherForecastResponse> call, @NonNull Throwable t) {
+                Log.e("Forecast Data error", t.toString());
+            }
+        });
+    }
+
+    private void convertToData(AccuweatherForecastResponse response) {
+        ArrayList<ForecastWeatherData> forecastData = new ArrayList<>();
+        ArrayList<Data> dataArrayList = response.data;
+        for (int i=0; i<dataArrayList.size();i++) {
+            Data data = dataArrayList.get(i);
+            ForecastWeatherData data1 = new ForecastWeatherData(data.date, data.temperature.minimum.value, data.temperature.maximum.value, colors[i]);
+            forecastData.add(data1);
+        }
+        initRecyclerView(forecastData);
+    }
+
+    private void initRecyclerView(ArrayList<ForecastWeatherData> data) {
+        recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+        DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(recyclerView.getContext(), LinearLayoutManager.VERTICAL);
+        recyclerView.addItemDecoration(dividerItemDecoration);
+        ForecastWeatherAdapter adapter = new ForecastWeatherAdapter(data, this);
+        recyclerView.setAdapter(adapter);
+    }
 
     private void setupTextSwitchers() {
         tempText.setFactory(new TextViewFactory(HomeActivity.this, R.style.TempTextView, true, typeface));
