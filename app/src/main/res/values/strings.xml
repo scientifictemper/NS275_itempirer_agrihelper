@@ -4,4 +4,5 @@
     <string name="humidity_label">Humidity</string>
     <string name="wind_label">Wind</string>
     <string name="next_4_days_hourly">Next 4 Days/Hourly</string>
+    <string name="title_activity_maps">Map</string>
 </resources>
