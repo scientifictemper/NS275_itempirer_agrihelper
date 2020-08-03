@@ -130,7 +130,6 @@ public class HomeActivity extends AppCompatActivity {
             super.onReceiveResult(resultCode, resultData);
             if (resultCode == 1) {
                 current_location.setText(resultData.getString("ADDRESS"));
-                Toast.makeText(HomeActivity.this, resultData.getString("ADDRESS"), Toast.LENGTH_SHORT).show();
                 Log.e("Location", Objects.requireNonNull(resultData.getString("ADDRESS")));
             } else {
                 Toast.makeText(HomeActivity.this, "ADDRESS", Toast.LENGTH_SHORT).show();
@@ -139,7 +138,7 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void getWeatherData(Location location) {
-        Call<ArrayList<AccuweatherResponse>> call = AccuWeather.getCurrentWeather(location);
+        Call<ArrayList<AccuweatherResponse>> call = AccuWeather.getCurrentWeather("");
         call.enqueue(new Callback<ArrayList<AccuweatherResponse>>() {
             @Override
             public void onResponse(@NonNull Call<ArrayList<AccuweatherResponse>> call, @NonNull Response<ArrayList<AccuweatherResponse>> response) {

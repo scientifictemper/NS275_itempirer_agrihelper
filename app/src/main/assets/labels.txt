@@ -1,0 +1,6 @@
+AnnualCrop
+Forest
+Highway
+Industrial
+Residential
+SeaLake

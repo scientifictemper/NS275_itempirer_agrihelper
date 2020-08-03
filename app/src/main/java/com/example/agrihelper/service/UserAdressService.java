@@ -12,6 +12,7 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -48,23 +49,23 @@ public class UserAdressService extends IntentService {
                 Log.e("Location Error", errorMessage);
             }
             if (addresses == null || addresses.isEmpty()) {
-                deliverResultToReceiver(0, errorMessage);
+                deliverResultToReceiver(0, errorMessage, "");
             } else {
                 Address address = addresses.get(0);
                 ArrayList<String> addressFragments = new ArrayList<>();
                 for (int i=0; i<=address.getMaxAddressLineIndex();i++) {
                     addressFragments.add(address.getLocality());
+                    addressFragments.add(address.getAdminArea());
                 }
-                deliverResultToReceiver(1,
-                        TextUtils.join(Objects.requireNonNull(System.getProperty("line.separator"))
-                                , addressFragments));
+                deliverResultToReceiver(1, addressFragments.get(0), addressFragments.get(1));
             }
         }
     }
 
-    private void deliverResultToReceiver(int resultCode, String addressMessage) {
+    private void deliverResultToReceiver(int resultCode, String city, String state) {
         Bundle bundle = new Bundle();
-        bundle.putString("ADDRESS", addressMessage);
+        bundle.putString("ADDRESS", city);
+        bundle.putString("STATE", state);
         resultReceiver.send(resultCode, bundle);
     }
 }
