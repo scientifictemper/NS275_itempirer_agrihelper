@@ -9,7 +9,10 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.hardware.biometrics.BiometricManager;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.os.FileUtils;
 import android.os.SystemClock;
 import android.util.Log;
 import android.widget.ImageView;
@@ -21,6 +24,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
@@ -48,54 +52,57 @@ public class DetailsActivity extends AppCompatActivity {
         try {
             bitmap = BitmapFactory.decodeStream(this.openFileInput("myImage"));
             image.setImageBitmap(bitmap);
-            detectImage();
+            saveImage(bitmap);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
     }
 
-    private void detectImage() {
-        File f = new File(this.getCacheDir(), "image.jpg");
+    private void saveImage(Bitmap finalBitmap) {
+        String root = Environment.getExternalStorageDirectory().getAbsolutePath();
+        File myDir = new File(root + "/saved_images");
+        myDir.mkdirs();
+
+        String fname = "Image"+".jpg";
+        File file = new File (myDir, fname);
+        if (file.exists ()) file.delete ();
         try {
-            f.createNewFile();
-        } catch (IOException e) {
+            FileOutputStream out = new FileOutputStream(file);
+            finalBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out);
+            out.flush();
+            out.close();
+            uploadImage(file);
+            Log.e("Image", "Saved" + myDir.getAbsolutePath());
+        } catch (Exception e) {
+            Log.e("File", "Error" + e.toString());
             e.printStackTrace();
         }
-
-//Convert bitmap to byte array
-        Bitmap bp = bitmap;
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        bp.compress(Bitmap.CompressFormat.JPEG, 0 /*ignored for PNG*/, bos);
-        byte[] bitmapdata = bos.toByteArray();
-
-//write the bytes in file
-        FileOutputStream fos = null;
-        try {
-            fos = new FileOutputStream(f);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-        try {
-            fos.write(bitmapdata);
-            fos.flush();
-            fos.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        RequestBody reqFile = RequestBody.create(MediaType.parse("image/*"), f);
-        Log.e("FileName", f.getName()+ " "+ reqFile.toString());
-        MultipartBody.Part body = MultipartBody.Part.createFormData("file", f.getName());
-        request(body);
-
     }
 
-    private void request(MultipartBody.Part body) {
-        Service service = new Retrofit.Builder().baseUrl("https://10.0.2.2:5000/").build().create(Service.class);
-        Call<ResponseBody> req = service.postImage(body);
+    private void uploadImage(File file) {
+        RequestBody requestFile = RequestBody.create(MediaType.parse("image/jpeg"), file);
+        MultipartBody.Part body = MultipartBody.Part.createFormData("image", "Image.jpg", requestFile);
+        RequestBody desc = RequestBody.create(MediaType.parse("text/plain"), "Image Type");
+        request(body, desc);
+    }
+
+    private void request(MultipartBody.Part body,RequestBody desc ) {
+        Service service = new Retrofit.Builder().baseUrl("http://10.0.2.2:5000/").build().create(Service.class);
+        Call<ResponseBody> req = service.postImage(body, desc);
         req.enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                Log.e("some res", "No s");
+                if (response.body() != null) {
+                    ResponseBody responseBody = response.body();
+                    try {
+                        Log.e("Response", responseBody.string());
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    Log.e("Response", "is null");
+                }
+
             }
 
             @Override
@@ -108,7 +115,8 @@ public class DetailsActivity extends AppCompatActivity {
     }
     interface Service {
         @Multipart
-        @POST("/get_land_type")
-        Call<ResponseBody> postImage(@Part MultipartBody.Part image);
+        @POST("get_land_type")
+        Call<ResponseBody> postImage(@Part MultipartBody.Part image, @Part("Some Data") RequestBody desc);
     }
+
 }

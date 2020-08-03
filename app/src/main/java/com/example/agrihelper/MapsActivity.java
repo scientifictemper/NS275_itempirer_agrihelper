@@ -24,6 +24,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.io.ByteArrayOutputStream;
@@ -101,10 +102,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        // Add a marker in Sydney and move the camera
-        LatLng bihar = new LatLng(25.0961, 85.3131);
-        mMap.addMarker(new MarkerOptions().position(bihar).title("Marker in Bihar"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(bihar));
+        LatLng currentLocation = new LatLng(25.0961, 85.3131);
+        final Marker[] marker = {mMap.addMarker(new MarkerOptions().position(currentLocation).title("Marker in Bihar"))};
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(currentLocation));
         mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
         mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
             @Override
@@ -112,6 +112,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 Location location = new Location("providerNA");
                 location.setLatitude(latLng.latitude);
                 location.setLongitude(latLng.longitude);
+                LatLng latLng1 = new LatLng(location.getLatitude(), location.getLongitude());
+                marker[0].remove();
+                marker[0] = mMap.addMarker(new MarkerOptions().position(latLng1));
                 view.setVisibility(View.VISIBLE);
                 fetchUserAddress(location);
                 Toast.makeText(MapsActivity.this,
